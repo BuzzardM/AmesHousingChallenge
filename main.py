@@ -14,16 +14,6 @@ df = pd.read_csv('res/AmesHousing.csv')
 dfCatigorical = pd.DataFrame()
 dfNumeric = pd.DataFrame()
 
-# %% Correlation matrix
-for col_name in df.columns:
-    if df[col_name].dtype == object:
-        le = LabelEncoder()
-        df[col_name] = le.fit_transform(df[col_name]).astype(int)
-
-fig, ax = plt.subplots(figsize=(20, 20))
-sns.heatmap(ax=ax, data=df.corr(), xticklabels=True, yticklabels=True)
-plt.show()
-
 # Exercise 1
 # %% Seperate df into classes of each of the variables
 for col in df.columns:
@@ -54,3 +44,37 @@ df.update(dfNumeric)
 # delete to spare memory consumption, can be removed if df's are needed in the future.
 del dfCatigorical
 del dfNumeric
+
+
+# Excercise 3
+# %% Descriptive summary of SalePrice
+dfY = df['SalePrice']
+dfY.describe()
+# %% Visualize distribution of SalePrice in a histogram
+plt.hist(dfY, bins=20)
+plt.show()
+# %% Price distribution grouped per neighbourhood
+neighbourhoods = df['Neighborhood'].unique()
+for val in neighbourhoods:
+    fig, ax = plt.subplots()
+    dfNbh = df[df['Neighborhood'] == val]['SalePrice']
+    ax.hist(dfNbh, bins=15)
+    ax.set_title(val)
+    plt.show()
+# %% Price distribution grouped per housing style
+styles = df['House Style'].unique()
+for val in styles:
+    fig, ax = plt.subplots()
+    dfStyle = df[df['House Style'] == val]['SalePrice']
+    ax.hist(dfStyle, bins=15)
+    ax.set_title(val)
+    plt.show()
+# %% Correlation matrix
+for col_name in df.columns:
+    if df[col_name].dtype == object:
+        le = LabelEncoder()
+        df[col_name] = le.fit_transform(df[col_name]).astype(int)
+
+fig, ax = plt.subplots(figsize=(20, 20))
+sns.heatmap(ax=ax, data=df.corr(), xticklabels=True, yticklabels=True)
+plt.show()
