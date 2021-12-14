@@ -3,7 +3,7 @@ import pandas as pd
 import seaborn as sns
 
 #%% Exercise 1
-df = pd.read_csv('res\AmesHousingData.csv', sep=';')
+df = pd.read_csv('res/AmesHousing.csv')
 dfCatigorical = pd.DataFrame()
 dfNumeric = pd.DataFrame()
 # %% 
