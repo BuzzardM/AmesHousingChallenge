@@ -3,7 +3,12 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+import sys
+
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import mean_squared_error
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -172,3 +177,28 @@ fig, ax = plt.subplots(figsize=(15, 15))
 sns.heatmap(ax=ax, data=sub_df.corr(), xticklabels=True, yticklabels=True)
 plt.tight_layout()
 plt.show()
+# Excercise 4
+# %%
+dfX = sub_df
+dfY = sub_df['SalePrice']
+dfX = dfX.drop('SalePrice', 1)
+dfXTrain, dfXTest, dfYTrain, dfYTest = train_test_split(dfX, dfY, test_size=0.20, random_state=23)
+dfXTest.sort_index(inplace=True)
+dfXTrain.sort_index(inplace=True)
+dfYTest.sort_index(inplace=True)
+dfYTrain.sort_index(inplace=True)
+
+lowest = (sys.maxsize, 0)
+for i in range(1, 100):
+    nnAlgo = KNeighborsClassifier(n_neighbors=i)
+    nnAlgo.fit(dfXTrain, dfYTrain)
+    yPredict = nnAlgo.predict(dfXTest)
+    yActual = dfYTest.tolist()
+    acc = mean_squared_error(yActual, yPredict, squared=False)
+    # acc = sum([abs(yPredict[i] - yActual[i]) for i in range(len(yActual))]) / len(yActual)
+    if acc < lowest[0]:
+        lowest = (acc, i)
+    print(acc)
+print(f'Final Accuracy: \nAverage Difference: {lowest[0]}\nK-value: {lowest[1]}')
+
+# %%
