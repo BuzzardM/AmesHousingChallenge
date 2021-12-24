@@ -31,7 +31,8 @@ dfCatigorical.describe()
 # %% Missing values
 df.isna().sum()
 
-# %% Exercise 2
+# Exercise 2
+# %% Fill in missing values with values given in the exercise
 dfCatigorical.fillna('100', inplace=True)
 
 for col in dfNumeric.columns:
@@ -45,36 +46,129 @@ df.update(dfNumeric)
 del dfCatigorical
 del dfNumeric
 
-
 # Excercise 3
 # %% Descriptive summary of SalePrice
 dfY = df['SalePrice']
 dfY.describe()
 # %% Visualize distribution of SalePrice in a histogram
-plt.hist(dfY, bins=20)
+box_plt = plt.boxplot(dfY)
+whiskers_data = [item.get_ydata() for item in box_plt['whiskers']]
+min_box, max_box = whiskers_data[0].min(), whiskers_data[1].max()
 plt.show()
+
+# %% Delete outliers
+df = df[((df['SalePrice'] >= min_box) & (df['SalePrice'] <= max_box))]
+
 # %% Price distribution grouped per neighbourhood
-neighbourhoods = df['Neighborhood'].unique()
-for val in neighbourhoods:
-    fig, ax = plt.subplots()
-    dfNbh = df[df['Neighborhood'] == val]['SalePrice']
-    ax.hist(dfNbh, bins=15)
-    ax.set_title(val)
-    plt.show()
+plt.figure(figsize=(10, 20))
+sns.boxplot(data=df, x='SalePrice', y='Neighborhood')
+plt.tight_layout()
+plt.show()
+
 # %% Price distribution grouped per housing style
-styles = df['House Style'].unique()
-for val in styles:
-    fig, ax = plt.subplots()
-    dfStyle = df[df['House Style'] == val]['SalePrice']
-    ax.hist(dfStyle, bins=15)
-    ax.set_title(val)
-    plt.show()
-# %% Correlation matrix
+plt.figure(figsize=(10, 12))
+sns.boxplot(data=df, x='SalePrice', y='House Style')
+plt.tight_layout()
+plt.show()
+
+# Data cleaning and selecting
+# %% Select relevant columns from dataset (creating subset)
 for col_name in df.columns:
     if df[col_name].dtype == object:
         le = LabelEncoder()
         df[col_name] = le.fit_transform(df[col_name]).astype(int)
 
-fig, ax = plt.subplots(figsize=(20, 20))
-sns.heatmap(ax=ax, data=df.corr(), xticklabels=True, yticklabels=True)
+cm = df.corr()
+sale_price_corr = cm['SalePrice']
+fig, ax = plt.subplots(figsize=(15, 15))
+sns.heatmap(ax=ax, data=cm, xticklabels=True, yticklabels=True)
+plt.tight_layout()
+plt.show()
+
+# %% drop columns that are NOT needed -0.1 > 0.1
+# columns that are NOT needed -0.1 > 0.1 :
+# PID: unique key column
+# Pool Area: insufficient correlation with sale price
+# Condition 1: " "
+# Condition 2: " "
+# Roof Matl: " "
+# Pool Area: " "
+# Land Slope: " "
+# Street: " "
+# Pool QC: " "
+# Mo Sold: " "
+# 3Ssn Porch: " "
+# BsmtFin SF 2: " "
+# Misc Val: " "
+# Yr Sold: " "
+# Order: " "
+# Utilities: " "
+# Land Contour: " "
+# Low Qual Fin SF: " "
+# BsmtFin Type 1: " "
+# Sale Type: " "
+# Bldg Type: " "
+# Lot Config: " "
+# Misc Feature: " "
+# MS SubClass: " "
+# Alley: " "
+# Heating: " "
+# Bsmt Half Bath: will be added to Half Bath
+
+sub_df = df.drop(columns=['Pool Area', 'Condition 1', 'Condition 2', 'Roof Matl', 'Pool Area', 'Land Slope',
+                          'Street', 'Pool QC', 'Mo Sold', '3Ssn Porch', 'BsmtFin SF 2', 'Misc Val', 'Yr Sold', 'Order',
+                          'Utilities', 'Land Contour', 'Low Qual Fin SF', 'BsmtFin Type 1',
+                          'Sale Type', 'Bldg Type', 'Lot Config', 'Misc Feature', 'MS SubClass', 'Alley', 'Heating'])
+
+fig, ax = plt.subplots(figsize=(15, 15))
+sns.heatmap(ax=ax, data=sub_df.corr(), xticklabels=True, yticklabels=True)
+plt.tight_layout()
+plt.show()
+
+# %% drop columns that MIGHT NOT be needed 0.1 > 0.2 & -0.2 > -0.1 :
+# Columns that MIGHT NOT be needed 0.1 > 0.2 & -0.2 > -0.1 :
+# Bsmt Unf SF: insufficient correlation with sale price
+# House Style: " "
+# Bsmt Cond: " "
+# Bedroom AbvGr: " "
+# BsmtFin Type 2: " "
+# Exterior 1st: " "
+# Exterior 2nd: " "
+# Exter Cond: " "
+# Functional: " "
+# Screen Porch: " "
+# Overall Cond: " "
+# Kitchen AbvGr: " "
+# Enclosed Porch: " "
+# Mas Vnr Type: " "
+# MS Zoning: " "
+# Fence: " "
+
+sub_df.drop(columns=['Bsmt Unf SF', 'House Style', 'Bsmt Cond', 'Bedroom AbvGr', 'BsmtFin Type 2', 'Exterior 1st',
+                     'Exterior 2nd', 'Exter Cond', 'Functional', 'Screen Porch', 'Overall Cond', 'Kitchen AbvGr',
+                     'Enclosed Porch', 'Mas Vnr Type', 'MS Zoning', 'Fence'], inplace=True)
+
+fig, ax = plt.subplots(figsize=(15, 15))
+sns.heatmap(ax=ax, data=sub_df.corr(), xticklabels=True, yticklabels=True)
+plt.tight_layout()
+plt.show()
+
+# %% drop columns that should have no influence on price
+# PID
+# Garage Cond -> Garage Qual has equal correlation
+# Garage Cars -> Garage Area has equal correlation and better significance
+# Bsmt Half bath -> will be added to half bath
+# Bsmt Full Bath -> will be added to full bath
+# Fireplace Qu -> Fireplaces has higher significance
+
+sub_df['Full Bath'] = sub_df['Full Bath'] + sub_df['Bsmt Full Bath']
+sub_df['Half Bath'] = sub_df['Half Bath'] + sub_df['Bsmt Half Bath']
+
+sub_df.drop(columns=['PID', 'Garage Cond', 'Garage Cars', 'Bsmt Full Bath', 'Bsmt Half Bath',
+                     'Fireplace Qu'],
+            inplace=True)
+
+fig, ax = plt.subplots(figsize=(15, 15))
+sns.heatmap(ax=ax, data=sub_df.corr(), xticklabels=True, yticklabels=True)
+plt.tight_layout()
 plt.show()
