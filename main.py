@@ -89,6 +89,7 @@ fig, ax = plt.subplots(figsize=(15, 15))
 sns.heatmap(ax=ax, data=cm, xticklabels=True, yticklabels=True)
 plt.tight_layout()
 plt.show()
+plt.s
 
 # %% drop columns that are NOT needed -0.1 > 0.1
 # columns that are NOT needed -0.1 > 0.1 :
