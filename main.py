@@ -1,14 +1,14 @@
 # %%
+import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
 import sys
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import mean_squared_error
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn.metrics import mean_squared_log_error
 
 pd.set_option('display.max_rows', None)
 pd.set_option('display.max_columns', None)
@@ -16,40 +16,34 @@ pd.set_option('display.width', 2000)
 
 # %% initalizing dataframes
 df = pd.read_csv('res/AmesHousing.csv')
-dfCatigorical = pd.DataFrame()
-dfNumeric = pd.DataFrame()
+df['MS SubClass'] = df['MS SubClass'].apply(str)
+df_num = df.select_dtypes(exclude='object').copy()
+df_cat = df.select_dtypes(include='object').copy()
 
 # Exercise 1
-# %% Seperate df into classes of each of the variables
-for col in df.columns:
-    if df[col].dtype == object:
-        dfCatigorical[col] = df[col]
-    else:
-        dfNumeric[col] = df[col]
-
 # %% Descriptive/summary statistics for all continuous variables
-dfNumeric.describe()
+df_num.describe()
 
 # %% Descriptive/summary statistics for all factor variables
-dfCatigorical.describe()
+df_cat.describe()
 
 # %% Missing values
 df.isna().sum()
 
 # Exercise 2
 # %% Fill in missing values with values given in the exercise
-dfCatigorical.fillna('100', inplace=True)
+df_cat.fillna('100', inplace=True)
 
-for col in dfNumeric.columns:
-    med = dfNumeric[col].median()
-    dfNumeric[col].fillna(med, inplace=True)
+for col in df_num.columns:
+    med = df_num[col].median()
+    df_num[col].fillna(med, inplace=True)
 
-df.update(dfCatigorical)
-df.update(dfNumeric)
+df.update(df_cat)
+df.update(df_num)
 
 # delete to spare memory consumption, can be removed if df's are needed in the future.
-del dfCatigorical
-del dfNumeric
+del df_cat
+del df_num
 
 # Excercise 3
 # %% Descriptive summary of SalePrice
@@ -78,10 +72,10 @@ plt.show()
 
 # Data cleaning and selecting
 # %% Select relevant columns from dataset (creating subset)
-for col_name in df.columns:
-    if df[col_name].dtype == object:
-        le = LabelEncoder()
-        df[col_name] = le.fit_transform(df[col_name]).astype(int)
+# for col_name in df.columns:
+#     if df[col_name].dtype == object:
+#         le = LabelEncoder()
+#         df[col_name] = le.fit_transform(df[col_name]).astype(int)
 
 cm = df.corr()
 sale_price_corr = cm['SalePrice']
@@ -178,27 +172,34 @@ sns.heatmap(ax=ax, data=sub_df.corr(), xticklabels=True, yticklabels=True)
 plt.tight_layout()
 plt.show()
 # Excercise 4
-# %%
-dfX = sub_df
-dfY = sub_df['SalePrice']
-dfX = dfX.drop('SalePrice', 1)
-dfXTrain, dfXTest, dfYTrain, dfYTest = train_test_split(dfX, dfY, test_size=0.20, random_state=23)
-dfXTest.sort_index(inplace=True)
-dfXTrain.sort_index(inplace=True)
-dfYTest.sort_index(inplace=True)
-dfYTrain.sort_index(inplace=True)
+# %% prepare dataframes
+df_num = df.select_dtypes(exclude='object').copy()
+df_cat = df.select_dtypes(include='object').copy()
+df_cat = pd.get_dummies(df_cat, drop_first=True)
+sub_df = pd.concat([df_num, df_cat], axis=1)
+df_X = sub_df.drop(columns=['SalePrice', 'PID'])
+df_Y = sub_df['SalePrice']
+df_X_train, df_X_test, df_y_train, df_y_test = train_test_split(df_X, df_Y, test_size=0.20, random_state=23)
+df_X_train.sort_index(inplace=True)
+df_X_test.sort_index(inplace=True)
+df_y_train.sort_index(inplace=True)
+df_y_test.sort_index(inplace=True)
 
+# %% generate model
 lowest = (sys.maxsize, 0)
+scores = []
 for i in range(1, 100):
-    nnAlgo = KNeighborsClassifier(n_neighbors=i)
-    nnAlgo.fit(dfXTrain, dfYTrain)
-    yPredict = nnAlgo.predict(dfXTest)
-    yActual = dfYTest.tolist()
-    acc = mean_squared_error(yActual, yPredict, squared=False)
-    # acc = sum([abs(yPredict[i] - yActual[i]) for i in range(len(yActual))]) / len(yActual)
-    if acc < lowest[0]:
-        lowest = (acc, i)
-    print(acc)
-print(f'Final Accuracy: \nAverage Difference: {lowest[0]}\nK-value: {lowest[1]}')
+    knn = KNeighborsRegressor(n_neighbors=i)
+    knn.fit(df_X_train, df_y_train)
+    actual_y = np.array(df_y_test)
+    predicted_y = knn.predict(df_X_test)
+    scores.append(mean_squared_log_error(actual_y, predicted_y, squared=False))
+    # acc = mean_squared_error(df_y_test.values, yPredict, squared=False)
+    # # acc = sum([abs(yPredict[i] - yActual[i]) for i in range(len(yActual))]) / len(yActual)
+    # if acc < lowest[0]:
+    #     lowest = (acc, i)
+    # print(acc)
+# print(f'Final Accuracy: \nAverage Difference: {lowest[0]}\nK-value: {lowest[1]}')
+scores = pd.Series(scores)
 
 # %%
