@@ -109,8 +109,25 @@ plt.show()
 # %% drop columns that are NOT needed -0.1 > 0.1
 # columns that are NOT needed -0.1 > 0.1 :
 df = df.drop(columns=['Pool Area', 'Mo Sold', '3Ssn Porch', 'BsmtFin SF 2', 'Misc Val', 'Yr Sold', 'Bsmt Half Bath',
-                      'Low Qual Fin SF'])
+                      'Low Qual Fin SF', 'Garage Area'])
 
+# %% Display scattterplots for strongest correlating features
+cols = [
+    'Overall Qual',
+    'Gr Liv Area',
+    'Garage Cars',
+    'Year Built'
+]
+for col in cols:
+    sns.relplot(data=df, kind='scatter', x=col, y='SalePrice').set(title=col)
+    plt.show()
+
+# %%
+print(df.shape)
+df = df.drop(df[(df['Overall Qual'] >= 9) & (df['SalePrice'] < 200_000)].index)
+df = df.drop(df[(df['Garage Cars'] == 5) & ((df['Garage Cars'].isin([0, 4])) & (df['SalePrice'] > 250_000)) & ((df['Garage Cars'] == 1) & (df['SalePrice'] > 300_000))].index)
+df = df[df['Gr Liv Area'] <= 4000]
+print(df.shape)
 # Excercise 4
 # %% prepare dataframes
 df_num = df.select_dtypes(exclude='object').copy()
@@ -134,7 +151,7 @@ for i in range(1, 100):
     actual_y = np.array(df_y_test)
     predicted_y = knn.predict(df_X_test)
     scores.append(mean_squared_log_error(actual_y, predicted_y, squared=False))
-scores = pd.Series(scores)
+# scores = pd.Series(scores)
 
 # %% generate Lasso
 lowest = (sys.maxsize, 0)
