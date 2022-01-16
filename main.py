@@ -1,6 +1,4 @@
 # %%
-import sys
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -18,7 +16,6 @@ pd.set_option('display.width', 2000)
 df = pd.read_csv('res/AmesHousing.csv')
 df.drop(columns=['PID', 'Order'], inplace=True)
 df['MS SubClass'] = df['MS SubClass'].apply(str)
-df['Overall Cond'] = df['Overall Cond'].astype(str)
 df['Yr Sold'] = df['Yr Sold'].astype(str)
 df['Mo Sold'] = df['Mo Sold'].astype(str)
 df_num = df.select_dtypes(exclude='object').copy()
@@ -75,15 +72,10 @@ df = df.drop(columns=['Fence', 'Alley', 'Misc Feature', 'Pool QC'])
 dfY = df['SalePrice']
 dfY.describe()
 
-# %% Visualize distribution of SalePrice in a histogram
-box_plt = plt.boxplot(dfY)
-whiskers_data = [item.get_ydata() for item in box_plt['whiskers']]
-min_box, max_box = whiskers_data[0].min(), whiskers_data[1].max()
+# %% Visualize distribution of SalePrice
+sns.boxplot(data=df, y='SalePrice')
+plt.tight_layout()
 plt.show()
-
-# %% Delete outliers
-# TODO: Better outlier handling
-df = df[((df['SalePrice'] >= min_box) & (df['SalePrice'] <= max_box))]
 
 # %% Price distribution grouped per neighbourhood
 plt.figure(figsize=(10, 20))
@@ -114,12 +106,11 @@ df = df.drop(columns=['Pool Area', 'Mo Sold', '3Ssn Porch', 'BsmtFin SF 2', 'Mis
 # %% Display scattterplots for strongest correlating features
 cols = [
     'Overall Qual',
-    'Gr Liv Area',
     'Garage Cars',
-    'Year Built'
 ]
 for col in cols:
     sns.relplot(data=df, kind='scatter', x=col, y='SalePrice').set(title=col)
+    plt.tight_layout()
     plt.show()
 
 # %%
@@ -128,6 +119,7 @@ df = df.drop(df[(df['Overall Qual'] >= 9) & (df['SalePrice'] < 200_000)].index)
 df = df.drop(df[(df['Garage Cars'] == 5) & ((df['Garage Cars'].isin([0, 4])) & (df['SalePrice'] > 250_000)) & ((df['Garage Cars'] == 1) & (df['SalePrice'] > 300_000))].index)
 df = df[df['Gr Liv Area'] <= 4000]
 print(df.shape)
+
 # Excercise 4
 # %% prepare dataframes
 df_num = df.select_dtypes(exclude='object').copy()
@@ -143,7 +135,6 @@ df_y_train.sort_index(inplace=True)
 df_y_test.sort_index(inplace=True)
 
 # %% generate model
-lowest = (sys.maxsize, 0)
 scores = []
 for i in range(1, 100):
     knn = KNeighborsRegressor(n_neighbors=i)
@@ -151,10 +142,9 @@ for i in range(1, 100):
     actual_y = np.array(df_y_test)
     predicted_y = knn.predict(df_X_test)
     scores.append(mean_squared_log_error(actual_y, predicted_y, squared=False))
-# scores = pd.Series(scores)
+scores = pd.Series(scores)
 
 # %% generate Lasso
-lowest = (sys.maxsize, 0)
 scores = []
 for i in np.arange(0, 5, 0.1):
     lassoAlgo = linear_model.Lasso(alpha=i)
